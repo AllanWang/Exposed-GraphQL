@@ -34,4 +34,9 @@ annotation class GraphQLField(
          *
          * If the return type is not a list, this attribute will be ignored
          */
-        val itemType: KClass<*> = Unit::class)
+        val itemType: KClass<*> = Unit::class,
+
+        /**
+         * Optional description
+         */
+        val description: String = "")

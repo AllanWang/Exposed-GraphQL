@@ -14,6 +14,7 @@ import kotlin.reflect.KClassifier
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.getExtensionDelegate
 import kotlin.reflect.full.isSubclassOf
 
 class GraphQLEntityException(message: String) : RuntimeException(message)
@@ -21,6 +22,7 @@ class GraphQLEntityException(message: String) : RuntimeException(message)
 @Suppress("UNCHECKED_CAST")
 class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(entityClass: EntityClass<ID, T>) {
 
+    val table = entityClass.table
     val fields: List<GraphQLEntityField>
 
     init {
@@ -39,7 +41,8 @@ class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(entityClass: EntityClas
         val name = annotation?.name.takeIf { !it.isNullOrEmpty() } ?: property.name
         val getter = property::get
         val type = outputType(property, annotation)
-        return GraphQLEntityField(name, getter, type, "Hello")
+        return GraphQLEntityField(name, getter, type, annotation?.description?.takeIf { it.isNotEmpty() }
+                ?: "Gets ${property.name} from ${table.tableName}")
     }
 
     private fun type(name: String, classifier: KClassifier, annotation: GraphQLField?): GraphQLType {
