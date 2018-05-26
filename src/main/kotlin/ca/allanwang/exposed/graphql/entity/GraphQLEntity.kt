@@ -25,7 +25,8 @@ open class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(val name: String,
                                                               val allFieldsByDefault: Boolean = false) {
 
     val table = entityClass.table
-    open val fields: List<ExposedField> by lazy {
+
+    val fields: List<ExposedField> by lazy {
         if (!entityClass::class.isCompanion) fail("Entity class is not a companion object")
         // enclosing class also referenced in the original entity class, so it should work here
         val singleEntityClass = (entityClass::class.java.enclosingClass as Class<T>).kotlin
@@ -86,10 +87,14 @@ open class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(val name: String,
         fields(fields.map { it.graphQLField() })
     }
 
-    protected open fun entityField(property: KProperty1<T, *>): ExposedField? {
+    private fun entityField(property: KProperty1<T, *>): ExposedField? {
         if (property.findAnnotation<GraphQLFieldIgnore>() != null) return null
         val annotation = property.findAnnotation<GraphQLField>()
         if (annotation == null && !allFieldsByDefault) return null
+        return entityField(property, annotation)
+    }
+
+    protected open fun entityField(property: KProperty1<T, *>, annotation: GraphQLField?): ExposedField? {
         val name = annotation?.name.takeIf { !it.isNullOrEmpty() } ?: property.name
         val getter = property::get
         val type = outputType(property, annotation)
@@ -102,7 +107,6 @@ open class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(val name: String,
         append("\tConditions\n${conditions.joinToString("\n")}\n")
         append("\tExtensions\n${extensions.joinToString("\n")}\n")
         append("\tFields\n${fields.joinToString("\n")}\n")
-
     }.toString()
 
     inner class ExposedField(val name: String,

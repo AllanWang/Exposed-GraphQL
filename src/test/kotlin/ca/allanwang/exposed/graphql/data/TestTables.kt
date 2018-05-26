@@ -1,6 +1,5 @@
 package ca.allanwang.exposed.graphql.data
 
-import ca.allanwang.exposed.graphql.entity.GraphQLAllFields
 import ca.allanwang.exposed.graphql.entity.GraphQLField
 import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.IntEntity
@@ -15,7 +14,6 @@ object TestItems : IntIdTable() {
 
 }
 
-@GraphQLAllFields
 class TestItemDb(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<TestItemDb>(TestItems)
 
@@ -31,6 +29,7 @@ class TestItemDb(id: EntityID<Int>) : IntEntity(id) {
         val sub = children.toList()
         "TestItem $name \n\tSubItems (${sub.size}) ${sub.joinToString("\n\t", prefix = "\n\t")}"
     }
+
 }
 
 object TestSubItems : IntIdTable() {
@@ -40,7 +39,6 @@ object TestSubItems : IntIdTable() {
 
 }
 
-@GraphQLAllFields
 class TestSubItemDb(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<TestSubItemDb>(TestSubItems)
 

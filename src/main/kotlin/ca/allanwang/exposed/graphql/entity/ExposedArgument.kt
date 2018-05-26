@@ -2,7 +2,6 @@ package ca.allanwang.exposed.graphql.entity
 
 import ca.allanwang.exposed.graphql.kotlin.graphQLArgument
 import ca.allanwang.exposed.graphql.kotlin.inputType
-import ca.allanwang.exposed.graphql.kotlin.toCamel
 import graphql.Scalars
 import graphql.schema.GraphQLArgument
 import graphql.schema.GraphQLInputType
@@ -34,8 +33,6 @@ class ExposedCondition(name: String,
             { EqOp(column, QueryParameter(it, column.columnType)) },
             default,
             description)
-
-    constructor(column: Column<*>) : this(column.name.toCamel(), column)
 
     private val default = default?.toString()
 

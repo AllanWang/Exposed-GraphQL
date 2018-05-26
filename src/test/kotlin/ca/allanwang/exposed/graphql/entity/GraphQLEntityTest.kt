@@ -20,7 +20,6 @@ object TestEntityTable : IntIdTable() {
 
 }
 
-@GraphQLAllFields
 class TestEntityDb(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<TestItemDb>(TestEntityTable)
 

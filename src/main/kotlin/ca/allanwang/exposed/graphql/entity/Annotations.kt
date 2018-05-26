@@ -3,15 +3,6 @@ package ca.allanwang.exposed.graphql.entity
 import kotlin.reflect.KClass
 
 /**
- * Used to indicate that an entity should have all fields added to the graphql object
- * Fields that are not annotated will be added with defaults
- */
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-@MustBeDocumented
-annotation class GraphQLAllFields
-
-/**
  * Used to configure any of the entity's values
  * For the best performance, properties that are expensive should be implemented through delegation
  * so that it isn't called unless the value is requested
