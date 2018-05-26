@@ -20,3 +20,7 @@ fun String.toCamel(): String = regexUnderscoreToCamel.replace(toLowerCase()) {
 fun String.toUnderscore(): String = regexCamelToUnderscore.replace(this.decapitalize()) {
     "_" + it.groupValues[0].toLowerCase()
 }
+
+class GraphQLEntityException(message: String) : RuntimeException(message)
+
+internal fun fail(message: String): Nothing = throw GraphQLEntityException(message)

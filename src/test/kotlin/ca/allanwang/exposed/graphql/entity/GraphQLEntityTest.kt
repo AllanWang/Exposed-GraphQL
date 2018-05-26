@@ -45,7 +45,7 @@ class GraphQLEntityTest {
 
     @Test
     fun `get fields`() {
-        val graphQLEntity = GraphQLEntity("testItem", TestEntityDb)
+        val graphQLEntity = GraphQLEntity("testItem", TestEntityDb, returnsList = false, allFieldsByDefault = true)
         val fields = graphQLEntity.fields.map { it.name to it }.toMap()
 
         assertEquals(3, fields.size, "@GraphQLFieldIgnore not working")
@@ -53,8 +53,8 @@ class GraphQLEntityTest {
         assertEquals(GraphQLNonNull(Scalars.GraphQLString), fields["itemName"]?.type)
         assertEquals(GraphQLNonNull(GraphQLList(Scalars.GraphQLString)), fields["children"]?.type)
         assertEquals(Scalars.GraphQLString, fields["greeting"]?.type)
-        
-        println(fields.values.joinToString("\n"))
+
+        println(graphQLEntity.toDataString())
     }
 
 }

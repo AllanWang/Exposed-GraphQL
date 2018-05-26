@@ -19,6 +19,7 @@ annotation class GraphQLAllFields
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME)
 @MustBeDocumented
+//@Repeatable
 annotation class GraphQLField(
         /**
          * Field name
@@ -27,12 +28,17 @@ annotation class GraphQLField(
         val name: String = "",
 
         /**
-         * Item type class
-         * For the most part, we will be able to get the type from the property
+         * Tag identifier to allow for different graphql entities based around the same exposed entity
+         */
+        val tag: String = "",
+
+        /**
+         * Item graphQLType class
+         * For the most part, we will be able to get the graphQLType from the property
          * The main use case for this is when a list/sized iterable is returned
          * In that case, the single item class must be supplied
          *
-         * If the return type is not a list, this attribute will be ignored
+         * If the return graphQLType is not a list, this attribute will be ignored
          */
         val itemType: KClass<*> = Unit::class,
 

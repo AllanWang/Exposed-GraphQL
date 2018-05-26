@@ -1,79 +1,122 @@
 package ca.allanwang.exposed.graphql.entity
 
-import graphql.Scalars
+import ca.allanwang.exposed.graphql.kotlin.fail
+import ca.allanwang.exposed.graphql.kotlin.graphQLFieldDefinition
+import ca.allanwang.exposed.graphql.kotlin.graphQLObjectType
+import ca.allanwang.exposed.graphql.kotlin.outputType
+import graphql.schema.DataFetchingEnvironment
+import graphql.schema.GraphQLFieldDefinition
 import graphql.schema.GraphQLList
-import graphql.schema.GraphQLNonNull
 import graphql.schema.GraphQLOutputType
-import graphql.schema.GraphQLType
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
-import java.math.BigDecimal
-import java.math.BigInteger
-import kotlin.reflect.KClass
-import kotlin.reflect.KClassifier
+import org.jetbrains.exposed.sql.SizedIterable
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.getExtensionDelegate
-import kotlin.reflect.full.isSubclassOf
-
-class GraphQLEntityException(message: String) : RuntimeException(message)
 
 @Suppress("UNCHECKED_CAST")
-open class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(val name: String, val entityClass: EntityClass<ID, T>) {
+open class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(val name: String,
+                                                              val entityClass: EntityClass<ID, T>,
+                                                              val returnsList: Boolean,
+                                                              val allFieldsByDefault: Boolean = false) {
 
     val table = entityClass.table
-    open val fields: List<GraphQLEntityField> by lazy {
+    open val fields: List<ExposedField> by lazy {
+        if (!entityClass::class.isCompanion) fail("Entity class is not a companion object")
         // enclosing class also referenced in the original entity class, so it should work here
         val singleEntityClass = (entityClass::class.java.enclosingClass as Class<T>).kotlin
-        val classAnnotation = singleEntityClass.findAnnotation<GraphQLAllFields>()
         val members = singleEntityClass.declaredMemberProperties
-         members.mapNotNull { entityField(it, classAnnotation) }
+        members.mapNotNull { entityField(it) }
     }
 
-    private fun fail(message: String): Nothing = throw GraphQLEntityException(message)
+    open val conditions: List<ExposedCondition> = emptyList()
 
-    protected open fun entityField(property: KProperty1<T, *>, classAnnotation: GraphQLAllFields?): GraphQLEntityField? {
-        if (property.findAnnotation<GraphQLFieldIgnore>() != null) return null
-        val annotation = property.findAnnotation<GraphQLField>()
-        println(property.name)
-        if (annotation == null && classAnnotation == null) return null
-        val name = annotation?.name.takeIf { !it.isNullOrEmpty() } ?: property.name
-        val getter = property::get
-        val type = outputType(property, annotation)
-        return GraphQLEntityField(name, getter, type, annotation?.description?.takeIf { it.isNotEmpty() }
-                ?: "Gets ${property.name} from ${table.tableName}")
-    }
+    open val extensions: List<ExposedExtension> = if (returnsList) listOf(ExposedLimitArg()) else emptyList()
 
-    private fun type(name: String, classifier: KClassifier, annotation: GraphQLField?): GraphQLType {
-        if (classifier !is KClass<*>) fail("Classifier for $name is not a KClass<*>")
-        fun subClassOf(klass: KClass<*>) = classifier.isSubclassOf(klass)
-        return when {
-            subClassOf(String::class) -> Scalars.GraphQLString
-            subClassOf(Int::class) -> Scalars.GraphQLInt
-            subClassOf(BigInteger::class) -> Scalars.GraphQLBigInteger
-            subClassOf(Long::class) -> Scalars.GraphQLLong
-            subClassOf(Float::class) -> Scalars.GraphQLFloat
-            subClassOf(BigDecimal::class) -> Scalars.GraphQLBigDecimal
-            subClassOf(Iterable::class) -> GraphQLList(type(name, annotation?.itemType
-                    ?: fail("Please specify the itemType for $name"), null))
-            else -> fail("Unknown classifier $classifier")
+    fun fetch(env: ExposedEntityEnvironment): Any? {
+        if (env.selections.isEmpty()) return null
+        return transaction {
+            val entity = getEntities(env)
+            if (returnsList) entity.map { it.toOutput(env) }
+            else entity.firstOrNull()?.toOutput(env)
         }
     }
 
-//    fun inputType(property: KProperty1<T, *>): GraphQLInputType = type(property) as GraphQLInputType
-
-    fun outputType(property: KProperty1<T, *>, propertyAnnotation: GraphQLField? = null): GraphQLOutputType {
-        val classifer = property.returnType.classifier ?: fail("Could not get classifier for ${property.name}")
-        val type = type(property.name, classifer, propertyAnnotation)
-        return (if (property.returnType.isMarkedNullable) type else GraphQLNonNull(type)) as GraphQLOutputType
+    private fun getEntities(env: ExposedEntityEnvironment): SizedIterable<T> {
+        val condition = env.condition(this)
+        val query = (if (condition != null) table.select(condition) else table.selectAll())
+        env.extensions(this)
+        return entityClass.wrapRows(ExposedExtension.fold(query, env.extensions(this)))
     }
 
-    inner class GraphQLEntityField(val name: String,
-                                   val getter: (T) -> Any?,
-                                   val type: GraphQLOutputType,
-                                   val description: String?) {
+    private fun T.toOutput(env: ExposedEntityEnvironment): Map<String, Any?> =
+            fields.filter { it.name in env.selections }.map {
+                it.name to it.getter(this)
+            }.toMap()
+
+    fun field(container: GraphQLEntityContainer): GraphQLFieldDefinition = graphQLFieldDefinition {
+        name(name)
+        argument(conditions.map { it.graphQLArgument() })
+        type(type(container))
+        dataFetcher {
+            val fieldEnv = toDbEnvironment(it) ?: return@dataFetcher null
+            fetch(fieldEnv)
+        }
+    }
+
+    /**
+     * Attempts to fetch the field environment for the current wiring
+     * from the provided data environment
+     */
+    fun toDbEnvironment(env: DataFetchingEnvironment): ExposedEntityEnvironment? {
+        val field = env.fields.firstOrNull { it.name == name } ?: return null
+        return ExposedEntityEnvironment(env.getContext(), field)
+    }
+
+    fun type(container: GraphQLEntityContainer): GraphQLOutputType =
+            container.type(this).run { if (returnsList) GraphQLList(this) else this }
+
+    internal open fun objectTypeFactory() = graphQLObjectType {
+        name(name)
+        description("SQL access to $name")
+        fields(fields.map { it.graphQLField() })
+    }
+
+    protected open fun entityField(property: KProperty1<T, *>): ExposedField? {
+        if (property.findAnnotation<GraphQLFieldIgnore>() != null) return null
+        val annotation = property.findAnnotation<GraphQLField>()
+        if (annotation == null && !allFieldsByDefault) return null
+        val name = annotation?.name.takeIf { !it.isNullOrEmpty() } ?: property.name
+        val getter = property::get
+        val type = outputType(property, annotation)
+        return ExposedField(name, getter, type, annotation?.description?.takeIf { it.isNotEmpty() }
+                ?: "Gets $name from ${table.tableName}")
+    }
+
+    fun toDataString() = StringBuilder().apply {
+        append("Entity $name\n")
+        append("\tConditions\n${conditions.joinToString("\n")}\n")
+        append("\tExtensions\n${extensions.joinToString("\n")}\n")
+        append("\tFields\n${fields.joinToString("\n")}\n")
+
+    }.toString()
+
+    inner class ExposedField(val name: String,
+                             val getter: (T) -> Any?,
+                             val type: GraphQLOutputType,
+                             val description: String?) {
+
         override fun toString(): String = "Field ($name) $type: $description"
+
+        fun graphQLField(): GraphQLFieldDefinition = graphQLFieldDefinition {
+            name(name)
+            type(type)
+            description(description)
+        }
     }
 
 }
