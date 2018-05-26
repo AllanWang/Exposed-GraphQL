@@ -20,23 +20,23 @@ import kotlin.reflect.full.isSubclassOf
 class GraphQLEntityException(message: String) : RuntimeException(message)
 
 @Suppress("UNCHECKED_CAST")
-class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(entityClass: EntityClass<ID, T>) {
+open class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(val name: String, val entityClass: EntityClass<ID, T>) {
 
     val table = entityClass.table
-    val fields: List<GraphQLEntityField>
-
-    init {
+    open val fields: List<GraphQLEntityField> by lazy {
         // enclosing class also referenced in the original entity class, so it should work here
         val singleEntityClass = (entityClass::class.java.enclosingClass as Class<T>).kotlin
         val classAnnotation = singleEntityClass.findAnnotation<GraphQLAllFields>()
         val members = singleEntityClass.declaredMemberProperties
-        fields = members.mapNotNull { entityField(it, classAnnotation) }
+         members.mapNotNull { entityField(it, classAnnotation) }
     }
 
     private fun fail(message: String): Nothing = throw GraphQLEntityException(message)
 
-    private fun entityField(property: KProperty1<T, *>, classAnnotation: GraphQLAllFields?): GraphQLEntityField? {
+    protected open fun entityField(property: KProperty1<T, *>, classAnnotation: GraphQLAllFields?): GraphQLEntityField? {
+        if (property.findAnnotation<GraphQLFieldIgnore>() != null) return null
         val annotation = property.findAnnotation<GraphQLField>()
+        println(property.name)
         if (annotation == null && classAnnotation == null) return null
         val name = annotation?.name.takeIf { !it.isNullOrEmpty() } ?: property.name
         val getter = property::get

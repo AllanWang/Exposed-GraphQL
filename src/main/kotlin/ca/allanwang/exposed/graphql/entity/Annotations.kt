@@ -13,8 +13,8 @@ annotation class GraphQLAllFields
 
 /**
  * Used to configure any of the entity's values
- * For the best performance, properties should be implemented through delegation
- * such that it isn't called unless the value is requested
+ * For the best performance, properties that are expensive should be implemented through delegation
+ * so that it isn't called unless the value is requested
  */
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME)
@@ -40,3 +40,11 @@ annotation class GraphQLField(
          * Optional description
          */
         val description: String = "")
+
+/**
+ * Skips this field when generating graphql object entry
+ */
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.RUNTIME)
+@MustBeDocumented
+annotation class GraphQLFieldIgnore

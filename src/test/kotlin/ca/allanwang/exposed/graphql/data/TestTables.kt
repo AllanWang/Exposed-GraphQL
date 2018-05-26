@@ -19,11 +19,13 @@ object TestItems : IntIdTable() {
 class TestItemDb(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<TestItemDb>(TestItems)
 
-    @GraphQLField(name = "hello")
+    @GraphQLField(name = "itemName")
     var name by TestItems.name
 
     @GraphQLField(itemType = String::class)
     val children by TestSubItemDb referrersOn TestSubItems.parent
+
+    val greeting by lazy { "Hello $name" }
 
     override fun toString(): String = transaction {
         val sub = children.toList()
