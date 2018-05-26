@@ -49,6 +49,8 @@ test {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$KOTLIN"
+    implementation "com.github.AllanWang:Exposed:$EXPOSED"
+    implementation "com.graphql-java:graphql-java:$GRAPHQL"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$KOTLIN"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$JUNIT"
