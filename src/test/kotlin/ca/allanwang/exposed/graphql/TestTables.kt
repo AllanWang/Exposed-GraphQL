@@ -6,6 +6,7 @@ import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.junit.jupiter.api.Test
 
 object TestItems : IntIdTable() {
 
@@ -13,10 +14,10 @@ object TestItems : IntIdTable() {
 
 }
 
-class TestItemDb(id: EntityID<Int>) : IntEntity(id), GraphQLEntity<Int, TestItemDb> by GraphQLEntityHolder("testItem") {
+class TestItemDb(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<TestItemDb>(TestItems)
 
-    var name by TestItems.name.graphQL("name")
+    var name by TestItems.name
 
     val children by (TestSubItemDb referrersOn TestSubItems.parent)
 
@@ -41,5 +42,26 @@ class TestSubItemDb(id: EntityID<Int>) : IntEntity(id) {
 
     override fun toString(): String = transaction {
         "TestSubItem $name - parent $parent"
+    }
+}
+
+class T {
+
+    @Test
+    fun t() {
+        val entity = graphQLEntity("item", TestItemDb) {
+            field("name", { name })
+        }
+
+        val subEntity = graphQLEntity("subItem", TestSubItemDb) {
+            field("name", { name }) {
+                using(TestSubItems.name) {
+                    sortable = true
+                    mandatory = true
+                }
+            }
+            field<TestSubItemDb, Int, TestItemDb>("parent", { parent }, entity)
+        }
+        println(subEntity)
     }
 }

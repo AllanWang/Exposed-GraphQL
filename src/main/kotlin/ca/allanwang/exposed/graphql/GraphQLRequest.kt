@@ -2,7 +2,6 @@ package ca.allanwang.exposed.graphql
 
 import graphql.language.*
 import graphql.schema.DataFetchingEnvironment
-import org.jetbrains.exposed.sql.Op
 
 class GraphQLRequest(
         /**
@@ -34,6 +33,11 @@ class GraphQLRequest(
 //
 //    fun extensions(wiring: FieldDbWiring<*, *>): Map<GraphDbExtensionArg, String?> =
 //            wiring.extensions.filter { it.name in argMap }.map { it to argMap[it.name] }.toMap()
+
+    fun subRequest(name: String): GraphQLRequest? {
+        val subField = field.selectionSet.selections.find { (it as? Field)?.name == name } as Field? ?: return null
+        return GraphQLRequest(context, subField)
+    }
 
     private fun Value.extractString(): String? = when (this) {
         is ArrayValue -> values.toString()

@@ -50,7 +50,7 @@ test {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$KOTLIN"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$KOTLIN"
-    implementation "com.github.AllanWang:Exposed:$EXPOSED"
+    implementation "ca.allanwang:exposed:$EXPOSED"
     implementation "com.graphql-java:graphql-java:$GRAPHQL"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$KOTLIN"
