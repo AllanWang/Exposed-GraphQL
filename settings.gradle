@@ -1,1 +1,2 @@
-rootProject.name='exposed-graphql'
+rootProject.name = 'Exposed-GraphQL'
+include ':exposed-gql-annotation', ':exposed-gql-processor', ':exposed-gql-sample'
