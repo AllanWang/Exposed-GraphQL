@@ -4,6 +4,6 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$KOTLIN"
-//        classpath "org.junit.platform:junit-platform-gradle-plugin:$JUNIT_PLATFORM"
+        classpath "org.junit.platform:junit-platform-gradle-plugin:$JUNIT_PLATFORM"
     }
 }
