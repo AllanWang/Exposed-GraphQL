@@ -102,11 +102,16 @@ open class GraphQLEntity<ID : Comparable<ID>, T : Entity<ID>>(val name: String,
                 ?: "Gets $name from ${table.tableName}")
     }
 
+    private fun StringBuilder.append(tag: String, data: List<Any?>) {
+        if (data.isEmpty()) append("\tNo $tag\n")
+        else append("\t$tag\n\t\t${data.joinToString("\n\t\t")}\n")
+    }
+
     fun toDataString() = StringBuilder().apply {
         append("Entity $name\n")
-        append("\tConditions\n${conditions.joinToString("\n")}\n")
-        append("\tExtensions\n${extensions.joinToString("\n")}\n")
-        append("\tFields\n${fields.joinToString("\n")}\n")
+        append("Conditions", conditions)
+        append("Extensions", extensions)
+        append("Fields", fields)
     }.toString()
 
     inner class ExposedField(val name: String,
