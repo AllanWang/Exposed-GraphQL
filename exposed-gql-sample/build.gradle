@@ -1,6 +1,16 @@
 apply from: '../base.gradle'
+apply plugin: 'kotlin-kapt'
 
 dependencies {
     implementation project(':exposed-gql-annotation')
-    annotationProcessor project(':exposed-gql-processor')
+    kapt project(':exposed-gql-processor')
+}
+
+apply plugin: 'idea'
+
+idea {
+    module {
+        sourceDirs += files('build/generated/source/kapt/main', 'build/generated/source/kaptKotlin/main')
+        generatedSourcesDirs += files('build/generated/source/kapt/main', 'build/generated/source/kaptKotlin/main')
+    }
 }
