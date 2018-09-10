@@ -5,6 +5,14 @@ package ca.allanwang.exposed.graphql
  */
 
 /**
+ * Class annotation for an exposed entity that will be used to generate graphql objects
+ */
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.SOURCE)
+@MustBeDocumented
+annotation class GraphQLEntity
+
+/**
  * Used to configure any of the entity's values
  * For the best performance, properties that are expensive should be implemented through delegation
  * so that it isn't called unless the value is requested

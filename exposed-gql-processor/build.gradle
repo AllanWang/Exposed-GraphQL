@@ -1,6 +1,10 @@
 apply from: '../base.gradle'
 
 dependencies {
+    implementation project(':exposed-gql-annotation')
     implementation "com.squareup:kotlinpoet:$KOTLIN_POET"
     implementation "org.jetbrains.exposed:exposed:$EXPOSED"
+
+    testImplementation "com.google.truth:truth:0.42"
+    testImplementation "com.google.testing.compile:compile-testing:0.15"
 }

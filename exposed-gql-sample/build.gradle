@@ -2,5 +2,5 @@ apply from: '../base.gradle'
 
 dependencies {
     implementation project(':exposed-gql-annotation')
-    kapt project(':exposed-gql-processor')
+    annotationProcessor project(':exposed-gql-processor')
 }
